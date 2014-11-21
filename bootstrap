@@ -1,0 +1,54 @@
+#!/bin/bash
+set -e
+
+WEB_HOME='/var/www/ping.heystephenwood.com'
+
+# Running an apt-cacher is a good way to speed up installs. Let's check to see if
+# one is running on our vagrant or docker hypervisor
+#
+# Check for running apt-cacher on vagrant hypervisor
+if $(nc -w1 10.0.2.2 3142 < /dev/null); then
+  echo 'Acquire::http { proxy "http://10.0.2.2:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+# Maybe the docker host is running an apt-cacher
+if $(nc -w1 172.17.42.1 3142 < /dev/null); then
+  echo 'Acquire::http { proxy "http://172.17.41.1:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+
+apt-get update
+apt-get install -y git nginx
+
+# Make nginx run in foreground (important for using runit) and also turn the worker processes down to 1
+sed -i '1s/^/daemon off;/' /etc/nginx/nginx.conf
+sed -i 's/worker_processes.*$/worker_processes 1;/' /etc/nginx/nginx.conf
+
+test -d /var/www || mkdir -p /var/www
+
+# Make sure www-data can only read and execute files
+chown -R nobody.www-data /var/www
+chmod -R 050 /var/www
+
+# If we're running in vagrant (for testing), we'll generate a self-signed
+# SSL certificate
+pushd ${WEB_HOME}
+test -d /vagrant                                                           \
+  && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509              \
+    -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=ping.heystephenwood.com" \
+    -keyout ping.heystephenwood.com.key                                    \
+    -out ping.heystephenwood.com.cert
+
+# Setup the vhost file
+ln -s ${WEB_HOME}/ping_heystephenwood_com_vhost /etc/nginx/sites-enabled/
+service nginx reload
+
+# Add the runit script
+test -d /etc/service/nginx || mkdir -p /etc/service/nginx
+cat > /etc/service/nginx/run <<RUN
+#!/bin/bash
+set -e
+
+exec /usr/sbin/nginx -q
+RUN
+chmod +x /etc/service/nginx/run
