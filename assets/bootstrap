@@ -1,0 +1,69 @@
+#!/bin/bash
+set -e
+
+# Bootstrap file for ping.heystephenwood.com homepage. This installer expects
+# the necessary assets to be installed at /tmp/assets
+ASSETS='/tmp/assets'
+WEB_HOME='/var/www/ping.heystephenwood.com'
+
+# Running an apt-cacher is a good way to speed up installs. I run one on my home
+# network and it speeds up installs _a lot_.
+if $(nc -w1 cato 3142); then
+  echo 'Apt-cacher detected on host cato'
+  echo 'Acquire::http { proxy "http://cato:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+
+# Also check to see if boot2docker host has the apt-cacher
+if $(nc -w1 172.28.128.1 3142); then
+  echo 'Apt-cacher detected on boot2docker host'
+  echo 'Acquire::http { proxy "http://172.28.128.1:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+
+# Also check to see if one's running on our vagrant hypervisor
+if $(nc -w1 10.0.2.2 3142); then
+  echo 'Apt-cacher detected on vagrant hypervisor'
+  echo 'Acquire::http { proxy "http://10.0.2.2:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+
+apt-get update
+apt-get install -y git nginx
+
+# Add my public key. Remember to remove this section if you're not me :)
+echo 'ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAG9F19s03YbWaHW6p1xDHbkCp2pd1DpBlrHLe1aJnu56CDIVSizkBXl5sGrgv3lfPnTzsvf6PuT6TBdxXXbDUQWkQF7BKnvbiHr9fFLAstPhRtJBVsb0en8XywALBjuCJ+xk3GePudYH7y+NtmffZmOEmz8IaeRsDDgI5YliWvo+Ic78Q==' > /root/.ssh/authorized_keys
+
+# Copy the index.html and vhost file from our assets folder
+mkdir -p ${WEB_HOME}/public_html
+cp ${ASSETS}/index.html ${WEB_HOME}/public_html/
+cp ${ASSETS}/ping_heystephenwood_com_vhost /etc/nginx/sites-enabled/
+
+# If we're running in vagrant (for testing), we'll generate a self-signed
+# SSL certificate
+pushd ${WEB_HOME}
+test -d /vagrant                                                           \
+  && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509              \
+    -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=ping.heystephenwood.com" \
+    -keyout ping.heystephenwood.com.key                                    \
+    -out ping.heystephenwood.com.cert
+
+# Make nginx run in foreground (important for using runit) and also turn the worker processes down to 1
+sed -i '1s/^/daemon off;/' /etc/nginx/nginx.conf
+sed -i 's/worker_processes.*$/worker_processes 1;/' /etc/nginx/nginx.conf
+
+# Add the runit script
+test -d /etc/service/nginx || mkdir -p /etc/service/nginx
+cat > /etc/service/nginx/run <<RUN
+#!/bin/bash
+set -e
+
+exec /usr/sbin/nginx -q
+RUN
+
+# runit will execute this script to start the webserver
+chmod +x /etc/service/nginx/run
+
+# Make sure www-data can only read and execute files
+chown -R nobody.www-data /var/www
+chmod -R 050 /var/www

@@ -1,0 +1,4 @@
+# Make sure nobody accidentally commits an SSL cert
+*.key
+*.cert
+*.crt
