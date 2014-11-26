@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
 
-# Bootstrap file for ping.heystephenwood.com homepage. This installer expects
-# the necessary assets to be installed at /tmp/assets
+# Configs root directories
 ASSETS='/tmp/assets'
-WEB_HOME='/var/www/ping.heystephenwood.com'
 
 # Running an apt-cacher is a good way to speed up installs. I run one on my home
 # network and it speeds up installs _a lot_.
@@ -29,19 +27,30 @@ if $(nc -w1 10.0.2.2 3142); then
 fi
 
 apt-get update
-apt-get install -y git nginx
+apt-get install -y nginx php5-fpm
+
+# Fix a small security risk with php5-fpm
+sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php5/fpm/php.ini
 
 # Add my public key. Remember to remove this section if you're not me :)
 echo 'ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAG9F19s03YbWaHW6p1xDHbkCp2pd1DpBlrHLe1aJnu56CDIVSizkBXl5sGrgv3lfPnTzsvf6PuT6TBdxXXbDUQWkQF7BKnvbiHr9fFLAstPhRtJBVsb0en8XywALBjuCJ+xk3GePudYH7y+NtmffZmOEmz8IaeRsDDgI5YliWvo+Ic78Q==' > /root/.ssh/authorized_keys
 
-# Copy the index.html and vhost file from our assets folder
-mkdir -p ${WEB_HOME}/public_html
-cp ${ASSETS}/index.html ${WEB_HOME}/public_html/
-cp ${ASSETS}/ping_heystephenwood_com_vhost /etc/nginx/sites-enabled/
+WEB_HOME='/var/www'
+
+# ping.heystephenwood.com
+mkdir -p ${WEB_HOME}/ping.heystephenwood.com
+cp -r -- ${ASSETS}/vhosts/ping.heystephenwood.com/public_html/* ${WEB_HOME}/ping.heystephenwood.com/
+cp -- ${ASSETS}/vhosts/ping.heystephenwood.com/ping_heystephenwood_com.conf /etc/nginx/conf.d/
+
+# eth0.me
+mkdir -p ${WEB_HOME}/eth0.me
+cp -r -- ${ASSETS}/vhosts/eth0.me/public_html/* ${WEB_HOME}/eth0.me/
+cp -- ${ASSETS}/vhosts/vhosts/eth0_me.conf /etc/nginx/conf.d/
 
 # If we're running in vagrant (for testing), we'll generate a self-signed
 # SSL certificate
-pushd ${WEB_HOME}
+test -d /container/ssl || mkdir -p /container/ssl
+pushd /container/ssl/
 test -d /vagrant                                                           \
   && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509              \
     -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=ping.heystephenwood.com" \
@@ -66,4 +75,5 @@ chmod +x /etc/service/nginx/run
 
 # Make sure www-data can only read and execute files
 chown -R nobody.www-data /var/www
-chmod -R 050 /var/www
+chmod -R 550 /var/www
+
