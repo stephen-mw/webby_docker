@@ -2,6 +2,6 @@
 set -e
 
 # Build and run the docker container
-docker build -t stephen/ping .
+docker build -t stephen/webby .
 
-docker run --name ping -d -p 22 -p 80:80 -p 443:443 stephen/ping:latest
+docker run --name webby -d -p 22 -p 80 -p 443 stephen/webby:latest
