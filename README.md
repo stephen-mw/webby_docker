@@ -14,9 +14,9 @@ $ curl eth0.me
 This is just a quick about me page. I use it because I might as well do something with the domain I'm paying for.
 
 ## Other links
-If you're bored you can read the blog of (Stephen Wood)[http://heystephenwood.com]. I write mostly about nerdy things.
+If you're bored you can read the blog of [Stephen Wood](http://heystephenwood.com). I write mostly about nerdy things.
 
-You can also check out the twitter of (Stephen Wood)[https://twitter.com/StephenMW]. Mostly I just rant here.
+You can also check out the twitter of [Stephen Wood](https://twitter.com/StephenMW). Mostly I just rant here.
 
 ## Building
 I've decided to contain all of the shell bootstrapping to a single file: ```assets/bootstrap```. I realize this goes against the convention of adding these commands to the Dockerfile, but I feel an actual bash script is a better way bootstrapping a node.
