@@ -1,15 +1,16 @@
-# Docker containers for eth0.me and ping.heystephenwood.com
+## Docker containers for eth0.me and ping.heystephenwood.com
 These are the configuration files used to run both of these websites.
 
 Everything is run inside a docker container. An haproxy container load balances the sites so I can do hitless deployments.
 
 ## eth0.me
-I run eth0.me for a very simple purpose: make it as easy as possible to find the public ip of the box you're connected to. All this website does is return the requestor's IP + a newline.
+I run eth0.me for a very simple purpose: make it as easy as possible to find the public ip of host. All this website does is return the requestor's IP + a newline.
 
-I would often be on a system and need this information. Now when I need this info I simply run:
+On (linux or bsd) host you simply need to run:
 ```shell
 $ curl eth0.me
 ```
+
 ## ping.heystephenwood.com
 This is just a quick about me page. I use it because I might as well do something with the domain I'm paying for.
 
