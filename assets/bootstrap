@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 # Configs root directories
 ASSETS='/tmp/assets'
@@ -29,8 +30,17 @@ fi
 apt-get update
 apt-get install -y nginx php5-fpm
 
-# Fix a small security risk with php5-fpm
+# Setup and enable php5-fpm
 sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php5/fpm/php.ini
+
+mkdir -p /etc/service/php5-fpm
+cat > /etc/service/php5-fpm/run <<PHP_RUN_SCRIPT
+#!/bin/bash
+set -e
+
+exec /usr/sbin/php5-fpm -F --fpm-config /etc/php5/fpm/php-fpm.conf
+PHP_RUN_SCRIPT
+chmod +x /etc/service/php5-fpm/run
 
 # Add my public key. Remember to remove this section if you're not me :)
 echo 'ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAG9F19s03YbWaHW6p1xDHbkCp2pd1DpBlrHLe1aJnu56CDIVSizkBXl5sGrgv3lfPnTzsvf6PuT6TBdxXXbDUQWkQF7BKnvbiHr9fFLAstPhRtJBVsb0en8XywALBjuCJ+xk3GePudYH7y+NtmffZmOEmz8IaeRsDDgI5YliWvo+Ic78Q==' > /root/.ssh/authorized_keys
@@ -39,13 +49,13 @@ WEB_HOME='/var/www'
 
 # ping.heystephenwood.com
 mkdir -p ${WEB_HOME}/ping.heystephenwood.com
-cp -r -- ${ASSETS}/vhosts/ping.heystephenwood.com/public_html/* ${WEB_HOME}/ping.heystephenwood.com/
+cp -r -- ${ASSETS}/vhosts/ping.heystephenwood.com/public_html ${WEB_HOME}/ping.heystephenwood.com/
 cp -- ${ASSETS}/vhosts/ping.heystephenwood.com/ping_heystephenwood_com.conf /etc/nginx/conf.d/
 
 # eth0.me
 mkdir -p ${WEB_HOME}/eth0.me
-cp -r -- ${ASSETS}/vhosts/eth0.me/public_html/* ${WEB_HOME}/eth0.me/
-cp -- ${ASSETS}/vhosts/vhosts/eth0_me.conf /etc/nginx/conf.d/
+cp -r -- ${ASSETS}/vhosts/eth0.me/public_html ${WEB_HOME}/eth0.me/
+cp -- ${ASSETS}/vhosts/eth0.me/eth0_me.conf /etc/nginx/conf.d/
 
 # If we're running in vagrant (for testing), we'll generate a self-signed
 # SSL certificate
