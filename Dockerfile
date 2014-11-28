@@ -15,7 +15,7 @@ ADD ping.heystephenwood.com.cert /container/ssl/ping.heystephenwood.com/ping.hey
 # Clean up the dangling configurations and files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-EXPOSE 80 443
+EXPOSE 80 443 22
 
 # Start the watchdog process
 CMD ["/sbin/my_init"]
