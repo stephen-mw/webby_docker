@@ -5,30 +5,11 @@ set -x
 # Configs root directories
 ASSETS='/tmp/assets'
 
-# Running an apt-cacher is a good way to speed up installs. I run one on my home
-# network and it speeds up installs _a lot_.
-if $(nc -w1 cato 3142); then
-  echo 'Apt-cacher detected on host cato'
-  echo 'Acquire::http { proxy "http://cato:3142"; };' \
-    > /etc/apt/apt.conf.d/02proxy
-fi
-
-# Also check to see if boot2docker host has the apt-cacher
-if $(nc -w1 172.28.128.1 3142); then
-  echo 'Apt-cacher detected on boot2docker host'
-  echo 'Acquire::http { proxy "http://172.28.128.1:3142"; };' \
-    > /etc/apt/apt.conf.d/02proxy
-fi
-
-# Also check to see if one's running on our vagrant hypervisor
-if $(nc -w1 10.0.2.2 3142); then
-  echo 'Apt-cacher detected on vagrant hypervisor'
-  echo 'Acquire::http { proxy "http://10.0.2.2:3142"; };' \
-    > /etc/apt/apt.conf.d/02proxy
-fi
-
 apt-get update
 apt-get install -y nginx php5-fpm
+
+# Remove the default page
+rm /etc/nginx/sites-enabled/default
 
 # Setup and enable php5-fpm
 sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php5/fpm/php.ini
@@ -43,7 +24,7 @@ PHP_RUN_SCRIPT
 chmod +x /etc/service/php5-fpm/run
 
 # Add my public key. Remember to remove this section if you're not me :)
-echo 'ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAG9F19s03YbWaHW6p1xDHbkCp2pd1DpBlrHLe1aJnu56CDIVSizkBXl5sGrgv3lfPnTzsvf6PuT6TBdxXXbDUQWkQF7BKnvbiHr9fFLAstPhRtJBVsb0en8XywALBjuCJ+xk3GePudYH7y+NtmffZmOEmz8IaeRsDDgI5YliWvo+Ic78Q==' > /root/.ssh/authorized_keys
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDLx7ISCVMSReb+chT8Z33x3EOwYeqKKeLqell+mMSqT6lOqIhVz4btBExpDYk46M3GcctU/3lSgpI+bY1KqtCv6zknsvMRrHRXfziNfZYYAHvM7gv7DetRzG4ngipui0lqPEtti5aDriEbElK2b544i7twVYMk2Jt/P16I6hVRYitBoa4iNBLMEF1I6dkldRXr85tj0O3CnKkiyhyWvtSyvww9HxOAh1SuUfNAvxkoUoOXuszPmAJPUuTCFoRq9MsuhtvjJ3BflKAaQ3DTZTEXUxCDJnIlggLvUDlWWGK0BLj3nIhrsLpDVC8aN+ENRK6x7bWxerWdUlse5OV+yfog+7CamfkUNjStYL0Z/tCWYgqMzg0/MMALJeJAWSoZlsKHY7CO3DSwc40nRlY0/4tsEYoRvo+0NhnSNs0YaB9lNDBtxZv23+IsCE0OnoJRow85F3iJtIYFbSb+rnS216iPHI6ftrFQbmL/8pH2dNxvItV7YeyoEHKhaPENoS3uyiBloo+UyvptKLEsYE5mz4n7Esy8aj/HMGeuV56EQIPuYzU6fWqMufJSDvG5cyRsYCG+QAK3PNJrDyRdbjxHYetFkPty+zlaUKDr4XVxUzskM1S2TfYsWOqf/v2uVhHcu/ENt7iRefA1bwq/5sP3KXR2iNypyY/mFppb1GZ3mAuT1Q== smwood4@gmail.com' > /root/.ssh/authorized_keys
 
 WEB_HOME='/var/www'
 
@@ -56,16 +37,6 @@ cp -- ${ASSETS}/vhosts/ping.heystephenwood.com/ping_heystephenwood_com.conf /etc
 mkdir -p ${WEB_HOME}/eth0.me
 cp -r -- ${ASSETS}/vhosts/eth0.me/public_html ${WEB_HOME}/eth0.me/
 cp -- ${ASSETS}/vhosts/eth0.me/eth0_me.conf /etc/nginx/conf.d/
-
-# If we're running in vagrant (for testing), we'll generate a self-signed
-# SSL certificate
-test -d /container/ssl || mkdir -p /container/ssl
-pushd /container/ssl/
-test -d /vagrant                                                           \
-  && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509              \
-    -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=ping.heystephenwood.com" \
-    -keyout ping.heystephenwood.com.key                                    \
-    -out ping.heystephenwood.com.cert
 
 # Make nginx run in foreground (important for using runit) and also turn the worker processes down to 1
 sed -i '1s/^/daemon off;/' /etc/nginx/nginx.conf

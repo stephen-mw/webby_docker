@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Running an apt-cacher is a good way to speed up installs. I run one on my home
+# network and it speeds up installs _a lot_.
+if $(nc -w1 cato 3142); then
+  echo 'Apt-cacher detected on host cato'
+  echo 'Acquire::http { proxy "http://cato:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+
+# Also check to see if boot2docker host has the apt-cacher
+if $(nc -w1 172.28.128.1 3142); then
+  echo 'Apt-cacher detected on boot2docker host'
+  echo 'Acquire::http { proxy "http://172.28.128.1:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
+
+# Also check to see if one's running on our vagrant hypervisor
+if $(nc -w1 10.0.2.2 3142); then
+  echo 'Apt-cacher detected on vagrant hypervisor'
+  echo 'Acquire::http { proxy "http://10.0.2.2:3142"; };' \
+    > /etc/apt/apt.conf.d/02proxy
+fi
