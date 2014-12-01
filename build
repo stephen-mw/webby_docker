@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+# Build and run the docker container
+docker build -t tutum.co/stephen_mw/webby .
+
+# docker run --name stephen/webby -d -p 22 -p 80:80 webby:latest

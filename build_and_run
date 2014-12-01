@@ -1,7 +1,0 @@
-#!/bin/bash
-set -e
-
-# Build and run the docker container
-docker build -t stephen/webby .
-
-docker run --name webby -d -p 22 -p 80:80 stephen/webby:latest

@@ -1,7 +1,7 @@
 ## Docker containers for eth0.me and ping.heystephenwood.com
 These are the configuration files used to run both of these websites.
 
-Everything is run inside a docker container. An haproxy container load balances the sites so I can do hitless deployments.
+Everything is run inside a docker container. Once a container has been tested, it's simply uploaded to Elastic Beanstalk for a quick and easy deployment.
 
 ## eth0.me
 I run eth0.me for a very simple purpose: make it as easy as possible to find the public ip of host. All this website does is return the requestor's IP + a newline.
