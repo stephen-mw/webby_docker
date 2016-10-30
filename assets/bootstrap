@@ -6,13 +6,13 @@ set -x
 ASSETS='/tmp/assets'
 
 apt-get update
-apt-get install -y nginx php5-fpm
+apt-get install -y nginx php-fpm
 
 # Remove the default page
 rm /etc/nginx/sites-enabled/default
 
 # Setup and enable php5-fpm
-sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php5/fpm/php.ini
+sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php/7.0/fpm/php.ini
 
 mkdir -p /etc/service/php5-fpm
 cat > /etc/service/php5-fpm/run <<PHP_RUN_SCRIPT
